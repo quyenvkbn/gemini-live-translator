@@ -1,3 +1,4 @@
+const DEFAULT_BACKEND_URL = 'wss://gemini-live-translator-zv4s.onrender.com/live';
 const $ = id => document.getElementById(id);
 let socket; let capture; let audioContext; let processor; let sourceNode; let outputContext; let nextOutputTime = 0; let sourceText = ''; let translationText = '';
 
@@ -39,5 +40,5 @@ async function start() {
 }
 function stop() { processor?.disconnect(); sourceNode?.disconnect(); audioContext?.close(); outputContext?.close(); outputContext = null; nextOutputTime = 0; capture?.getTracks().forEach(track => track.stop()); socket?.close(); socket = capture = null; $('start').disabled = false; $('stop').disabled = true; status('Sẵn sàng'); }
 $('start').onclick = () => start().catch(error => { status(error.message, 'error'); stop(); }); $('stop').onclick = stop;
-chrome.storage.local.get(['backendUrl'], value => { if (value.backendUrl) $('backendUrl').value = value.backendUrl; });
+chrome.storage.local.get(['backendUrl'], value => { $('backendUrl').value = value.backendUrl || DEFAULT_BACKEND_URL; });
 $('backendUrl').onchange = () => chrome.storage.local.set({ backendUrl: $('backendUrl').value.trim() });

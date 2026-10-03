@@ -39,7 +39,13 @@ async function start() {
   chrome.storage.local.set({ backendUrl });
   if (!backendUrl || !/^wss:\/\//i.test(backendUrl)) throw new Error('Hãy nhập URL backend online dạng wss://.../live. Extension không còn dùng localhost.');
   try {
-    capture = await chrome.tabCapture.capture({ audio: true, video: false });
+    capture = await new Promise((resolve, reject) => {
+      chrome.tabCapture.capture({ audio: true, video: false }, stream => {
+        const error = chrome.runtime.lastError;
+        if (error) reject(new Error(error.message));
+        else resolve(stream);
+      });
+    });
   } catch (error) {
     throw new Error(`Chrome không lấy được âm thanh tab: ${error?.message || error}`);
   }

@@ -3,6 +3,12 @@ const $ = id => document.getElementById(id);
 let socket; let capture; let audioContext; let processor; let sourceNode; let outputContext; let nextOutputTime = 0; let sourceText = ''; let translationText = '';
 
 function status(text, type = '') { $('status').textContent = text; $('status').className = `status ${type}`; }
+function normalizeBackendUrl(value) {
+  const saved = (value || '').trim();
+  if (!saved || /localhost|127\.0\.0\.1/i.test(saved)) return DEFAULT_BACKEND_URL;
+  if (/^wss:\/\/gemini-live-translator-zv4s\.onrender\.com\/?$/i.test(saved)) return DEFAULT_BACKEND_URL;
+  return saved;
+}
 function bytesToBase64(bytes) { let binary = ''; for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(binary); }
 function pcm16(data) { const output = new Int16Array(data.length); for (let i = 0; i < data.length; i++) output[i] = Math.max(-1, Math.min(1, data[i])) * 32767; return output; }
 function playAudio(base64, mimeType = 'audio/pcm;rate=24000') {
@@ -25,12 +31,21 @@ function handleMessage(message) {
 }
 
 async function start() {
-  const backendUrl = $('backendUrl').value.trim();
+  const backendUrl = normalizeBackendUrl($('backendUrl').value);
+  $('backendUrl').value = backendUrl;
+  chrome.storage.local.set({ backendUrl });
   if (!backendUrl || !/^wss:\/\//i.test(backendUrl)) throw new Error('Hãy nhập URL backend online dạng wss://.../live. Extension không còn dùng localhost.');
-  capture = await chrome.tabCapture.capture({ audio: true, video: false });
+  try {
+    capture = await chrome.tabCapture.capture({ audio: true, video: false });
+  } catch (error) {
+    throw new Error(`Chrome không lấy được âm thanh tab: ${error?.message || error}`);
+  }
   if (!capture?.getAudioTracks().length) throw new Error('Không lấy được audio của tab.');
   socket = new WebSocket(backendUrl);
-  await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = () => reject(new Error('Không kết nối được backend')); });
+  await new Promise((resolve, reject) => {
+    socket.onopen = resolve;
+    socket.onerror = () => reject(new Error('Không kết nối được backend Render'));
+  });
   socket.onmessage = event => { try { handleMessage(JSON.parse(event.data)); } catch {} };
   socket.onclose = event => status(event.reason || 'Đã ngắt kết nối', 'error');
   audioContext = new AudioContext({ sampleRate: 16000 }); sourceNode = audioContext.createMediaStreamSource(capture);
@@ -38,12 +53,11 @@ async function start() {
   processor.onaudioprocess = event => { const pcm = pcm16(event.inputBuffer.getChannelData(0)); socket?.readyState === WebSocket.OPEN && socket.send(JSON.stringify({ realtimeInput: { audio: { data: bytesToBase64(new Uint8Array(pcm.buffer)), mimeType: 'audio/pcm;rate=16000' } } })); };
   sourceNode.connect(processor); processor.connect(audioContext.destination); $('start').disabled = true; $('stop').disabled = false; status('Đang dịch', 'live');
 }
-function stop() { processor?.disconnect(); sourceNode?.disconnect(); audioContext?.close(); outputContext?.close(); outputContext = null; nextOutputTime = 0; capture?.getTracks().forEach(track => track.stop()); socket?.close(); socket = capture = null; $('start').disabled = false; $('stop').disabled = true; status('Sẵn sàng'); }
-$('start').onclick = () => start().catch(error => { status(error.message, 'error'); stop(); }); $('stop').onclick = stop;
+function stop(resetStatus = true) { processor?.disconnect(); sourceNode?.disconnect(); audioContext?.close(); outputContext?.close(); outputContext = null; nextOutputTime = 0; capture?.getTracks().forEach(track => track.stop()); socket?.close(); socket = capture = null; $('start').disabled = false; $('stop').disabled = true; if (resetStatus) status('Sẵn sàng'); }
+$('start').onclick = () => start().catch(error => { stop(false); status(error.message, 'error'); }); $('stop').onclick = stop;
 chrome.storage.local.get(['backendUrl'], value => {
   const saved = value.backendUrl || '';
-  const isOldLocalUrl = /localhost|127\.0\.0\.1/i.test(saved);
-  const backendUrl = isOldLocalUrl ? DEFAULT_BACKEND_URL : (saved || DEFAULT_BACKEND_URL);
+  const backendUrl = normalizeBackendUrl(saved);
   $('backendUrl').value = backendUrl;
   if (backendUrl !== saved) chrome.storage.local.set({ backendUrl });
 });

@@ -40,5 +40,11 @@ async function start() {
 }
 function stop() { processor?.disconnect(); sourceNode?.disconnect(); audioContext?.close(); outputContext?.close(); outputContext = null; nextOutputTime = 0; capture?.getTracks().forEach(track => track.stop()); socket?.close(); socket = capture = null; $('start').disabled = false; $('stop').disabled = true; status('Sẵn sàng'); }
 $('start').onclick = () => start().catch(error => { status(error.message, 'error'); stop(); }); $('stop').onclick = stop;
-chrome.storage.local.get(['backendUrl'], value => { $('backendUrl').value = value.backendUrl || DEFAULT_BACKEND_URL; });
+chrome.storage.local.get(['backendUrl'], value => {
+  const saved = value.backendUrl || '';
+  const isOldLocalUrl = /localhost|127\.0\.0\.1/i.test(saved);
+  const backendUrl = isOldLocalUrl ? DEFAULT_BACKEND_URL : (saved || DEFAULT_BACKEND_URL);
+  $('backendUrl').value = backendUrl;
+  if (backendUrl !== saved) chrome.storage.local.set({ backendUrl });
+});
 $('backendUrl').onchange = () => chrome.storage.local.set({ backendUrl: $('backendUrl').value.trim() });

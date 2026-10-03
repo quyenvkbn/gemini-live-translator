@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gemini Live Translator</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">GEMINI LIVE · SONG SONG</p>
+        <h1>Phiên dịch video theo thời gian thực</h1>
+        <p class="muted">Phát video hoặc bật microphone. Gemini sẽ nghe, nhận diện ngôn ngữ và hiện bản dịch tiếng Việt.</p>
+      </div>
+      <span id="status" class="status idle">Sẵn sàng</span>
+    </header>
+
+    <section class="card controls">
+      <label class="file-picker">Chọn video <input id="videoFile" type="file" accept="video/*" /></label>
+      <button id="micButton" class="primary">● Bắt đầu nghe</button>
+      <button id="cameraButton">◉ Camera</button>
+      <button id="tabButton">▣ Chia sẻ tab YouTube</button>
+      <label class="select-label">Dịch sang
+        <select id="targetLanguage"><option value="Vietnamese">Tiếng Việt</option><option value="English">English</option><option value="Japanese">日本語</option></select>
+      </label>
+      <button id="clearButton" class="quiet">Xóa phụ đề</button>
+    </section>
+
+    <section class="stage card">
+      <video id="video" controls playsinline></video>
+      <div id="videoEmpty" class="video-empty">Chọn một video để xem và phiên dịch<br /><small>Hoặc bấm “Bắt đầu nghe” để dùng microphone</small></div>
+    </section>
+
+    <section class="captions">
+      <article class="caption-card card"><div class="caption-title"><span class="dot source"></span>Nghe được</div><p id="sourceCaption" class="caption-text muted">Đang chờ âm thanh…</p></article>
+      <article class="caption-card card translation"><div class="caption-title"><span class="dot translated"></span>Bản dịch</div><p id="translatedCaption" class="caption-text">Bản dịch sẽ xuất hiện ở đây…</p></article>
+    </section>
+
+    <p class="note">Âm thanh được truyền tới Gemini Live để xử lý. Hãy dùng tai nghe nếu đang phát video bằng loa.</p>
+    <canvas id="frameCanvas" hidden></canvas>
+  </main>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

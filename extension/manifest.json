@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Live Translator",
+  "version": "0.1.0",
+  "description": "Dịch audio của tab hiện tại bằng Gemini Live.",
+  "permissions": ["tabCapture", "sidePanel", "storage"],
+  "action": { "default_title": "Mở Gemini Live Translator" },
+  "background": { "service_worker": "service-worker.js", "type": "module" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "icons": {},
+  "minimum_chrome_version": "116"
+}

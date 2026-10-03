@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: gemini-live-translator
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false

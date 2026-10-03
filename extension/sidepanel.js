@@ -39,12 +39,20 @@ async function start() {
   chrome.storage.local.set({ backendUrl });
   if (!backendUrl || !/^wss:\/\//i.test(backendUrl)) throw new Error('Hãy nhập URL backend online dạng wss://.../live. Extension không còn dùng localhost.');
   try {
-    capture = await new Promise((resolve, reject) => {
-      chrome.tabCapture.capture({ audio: true, video: false }, stream => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (!tab?.id) throw new Error('Không xác định được tab hiện tại.');
+    if (/^(chrome|edge|about|brave):/i.test(tab.url || '')) throw new Error('Chrome không cho phép lấy âm thanh từ trang hệ thống. Hãy mở YouTube hoặc Facebook.');
+    const streamId = await new Promise((resolve, reject) => {
+      chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, id => {
         const error = chrome.runtime.lastError;
         if (error) reject(new Error(error.message));
-        else resolve(stream);
+        else if (!id) reject(new Error('Chrome không cấp được stream audio cho tab.'));
+        else resolve(id);
       });
+    });
+    capture = await navigator.mediaDevices.getUserMedia({
+      audio: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } },
+      video: false
     });
   } catch (error) {
     throw new Error(`Chrome không lấy được âm thanh tab: ${error?.message || error}`);

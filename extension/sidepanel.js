@@ -31,6 +31,9 @@ function handleMessage(message) {
 }
 
 async function start() {
+  status('Đang kết nối…', 'live');
+  $('start').disabled = true;
+  $('stop').disabled = false;
   const backendUrl = normalizeBackendUrl($('backendUrl').value);
   $('backendUrl').value = backendUrl;
   chrome.storage.local.set({ backendUrl });
